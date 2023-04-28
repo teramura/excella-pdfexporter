@@ -1,30 +1,23 @@
-/*************************************************************************
- *
- * Copyright 2009 by bBreak Systems.
- *
- * ExCella Reports - Excelファイルを利用した帳票ツール
- *
- * $Id: ReportsTestUtil.java 197 2010-11-19 09:14:57Z akira-yokoi $
- * $Revision: 197 $
- *
- * This file is part of ExCella Reports.
- *
- * ExCella Reports is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License version 3
- * only, as published by the Free Software Foundation.
- *
- * ExCella Reports is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License version 3 for more details
- * (a copy is included in the COPYING.LESSER file that accompanied this code).
- *
- * You should have received a copy of the GNU Lesser General Public License
- * version 3 along with ExCella Reports.  If not, see
- * <http://www.gnu.org/licenses/lgpl-3.0-standalone.html>
- * for a copy of the LGPLv3 License.
- *
- ************************************************************************/
+/*-
+ * #%L
+ * excella-pdfexporter
+ * %%
+ * Copyright (C) 2009 - 2019 bBreak Systems and contributors
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+
 package org.bbreak.excella.reports;
 
 import java.io.File;
@@ -41,9 +34,9 @@ import org.apache.poi.hssf.usermodel.HSSFPalette;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hssf.util.HSSFColor;
-import org.apache.poi.hssf.util.PaneInformation;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Footer;
 import org.apache.poi.ss.usermodel.Header;
 import org.apache.poi.ss.usermodel.PrintSetup;
@@ -52,6 +45,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.ss.util.PaneInformation;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFFont;
@@ -261,7 +255,7 @@ public class ReportsTestUtil {
                     Iterator<Cell> cellIterator = row.cellIterator();
                     while ( cellIterator.hasNext()) {
                         Cell cell = cellIterator.next();
-                        if ( cell.getCellType() != Cell.CELL_TYPE_BLANK) {
+                        if ( cell.getCellType() != CellType.BLANK) {
                             lastRowIndex = row.getRowNum();
                             break;
                         }
@@ -532,7 +526,7 @@ public class ReportsTestUtil {
         sb.append( "italic=").append( font.getItalic()).append( ",");
         sb.append( "strikout=").append( font.getStrikeout()).append( ",");
         sb.append( "colorpalette=").append( getHSSFColorString( ( HSSFWorkbook) workbook, font.getColor())).append( ",");
-        sb.append( "boldweight=").append( Integer.toHexString( font.getBoldweight())).append( ",");
+        sb.append( "bold=").append( font.getBold()).append( ",");
         sb.append( "supersubscript=").append( Integer.toHexString( font.getTypeOffset())).append( ",");
         sb.append( "underline=").append( Integer.toHexString( font.getUnderline())).append( ",");
         sb.append( "charset=").append( Integer.toHexString( font.getCharSet())).append( ",");
@@ -616,9 +610,9 @@ public class ReportsTestUtil {
         StringBuffer sb = new StringBuffer( "[");
         if ( color != null) {
             sb.append( "Indexed=").append( color.getIndexed()).append( ",");
-            sb.append( "Rgb=");
-            if ( color.getRgb() != null) {
-                for ( byte b : color.getRgb()) {
+            sb.append( "RGB=");
+            if ( color.getRGB() != null) {
+                for ( byte b : color.getRGB()) {
                     sb.append( String.format( "%02x", b).toUpperCase());
                 }
             }
@@ -728,22 +722,22 @@ public class ReportsTestUtil {
 
         if ( cell != null) {
             switch ( cell.getCellType()) {
-                case Cell.CELL_TYPE_BLANK:
+                case BLANK:
                     value = cell.getStringCellValue();
                     break;
-                case Cell.CELL_TYPE_BOOLEAN:
+                case BOOLEAN:
                     value = String.valueOf( cell.getBooleanCellValue());
                     break;
-                case Cell.CELL_TYPE_ERROR:
+                case ERROR:
                     value = String.valueOf( cell.getErrorCellValue());
                     break;
-                case Cell.CELL_TYPE_NUMERIC:
+                case NUMERIC:
                     value = String.valueOf( cell.getNumericCellValue());
                     break;
-                case Cell.CELL_TYPE_STRING:
+                case STRING:
                     value = cell.getStringCellValue();
                     break;
-                case Cell.CELL_TYPE_FORMULA:
+                case FORMULA:
                     value = cell.getCellFormula();
                 default:
                     value = "";
@@ -758,23 +752,8 @@ public class ReportsTestUtil {
      * @param cellType セルタイプ
      * @return セルタイプの文字列表現
      */
-    private static String getCellTypeString( int cellType) {
-        switch ( cellType) {
-            case Cell.CELL_TYPE_BLANK:
-                return "BLANK";
-            case Cell.CELL_TYPE_BOOLEAN:
-                return "BOOLEAN";
-            case Cell.CELL_TYPE_ERROR:
-                return "BLANK";
-            case Cell.CELL_TYPE_NUMERIC:
-                return "NUMERIC";
-            case Cell.CELL_TYPE_STRING:
-                return "STRING";
-            case Cell.CELL_TYPE_FORMULA:
-                return "FORMULA";
-            default:
-                return "";
-        }
+    private static String getCellTypeString( CellType cellType) {
+        return cellType.name();
     }
 
     public static String getTestOutputDir() {

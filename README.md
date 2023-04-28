@@ -14,10 +14,10 @@ Excella PdfExporter
 2. 配布条件  
 -------------
 
-  本ソフトウェアはLGPL v3にて公開しています。
-  詳細は「COPYING.LESSER」ファイルまたは
+  本ソフトウェアはApache License, Version 2.0にて公開しています。
+  詳細は「LICENSE.txt」ファイルまたは
   以下のページを参照してください。
-  http://www.gnu.org/licenses/lgpl-3.0-standalone.html
+  https://www.apache.org/licenses/LICENSE-2.0.txt
 
 
 3. 免責  
@@ -56,13 +56,17 @@ ${LIBREOFFICE_HOME}/program/soffice -headless -accept=socket,port=8100;urp;
 ```
   ReportProcessor reportProcessor = new ReportProcessor();
   OfficeManager officeManager =
-    new ExternalOfficeManagerBuilder().setPortNumber( 8100).build();
+    ExternalOfficeManager.builder().portNumbers( 8100).build();
+  officeManager.start();
   reportProcessor.addReportBookExporter( new OoPdfExporter(officeManager));
   reportProcessor.process( outputBook);
+  officeManager.stop();
 ```
 
 6. 更新履歴  
 -------------
+* 2021/09/13 Version 2.1 リリース
+* 2019/12/24 Version 2.0 リリース
 * 2017/01/28 Version 1.2 リリース
 * 2016/04/05 Version 1.1 リリース
 * 2016/01/17 Version 1.0 リリース

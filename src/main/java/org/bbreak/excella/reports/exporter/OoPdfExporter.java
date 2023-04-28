@@ -1,51 +1,42 @@
-/*************************************************************************
- *
- * Copyright 2009 by bBreak Systems.
- *
- * ExCella Reports - Excelファイルを利用した帳票ツール
- *
- * $Id: OoPdfExporter.java 97 2010-01-13 02:11:36Z tomo-shibata $
- * $Revision: 97 $
- *
- * This file is part of ExCella Reports.
- *
- * ExCella Reports is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License version 3
- * only, as published by the Free Software Foundation.
- *
- * ExCella Reports is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License version 3 for more details
- * (a copy is included in the COPYING.LESSER file that accompanied this code).
- *
- * You should have received a copy of the GNU Lesser General Public License
- * version 3 along with ExCella Reports .  If not, see
- * <http://www.gnu.org/licenses/lgpl-3.0-standalone.html>
- * for a copy of the LGPLv3 License.
- *
- ************************************************************************/
+/*-
+ * #%L
+ * excella-pdfexporter
+ * %%
+ * Copyright (C) 2009 - 2019 bBreak Systems and contributors
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+
 package org.bbreak.excella.reports.exporter;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.jodconverter.OfficeDocumentConverter;
-import org.jodconverter.document.DefaultDocumentFormatRegistry;
-import org.jodconverter.document.DocumentFamily;
-import org.jodconverter.document.DocumentFormat;
-import org.jodconverter.document.DocumentFormatRegistry;
-import org.jodconverter.document.SimpleDocumentFormatRegistry;
-import org.jodconverter.office.DefaultOfficeManagerBuilder;
-import org.jodconverter.office.OfficeException;
-import org.jodconverter.office.OfficeManager;
 import org.bbreak.excella.core.BookData;
 import org.bbreak.excella.core.exception.ExportException;
 import org.bbreak.excella.reports.model.ConvertConfiguration;
+import org.jodconverter.core.document.DefaultDocumentFormatRegistry;
+import org.jodconverter.core.document.DocumentFamily;
+import org.jodconverter.core.document.DocumentFormat;
+import org.jodconverter.core.document.DocumentFormatRegistry;
+import org.jodconverter.core.document.SimpleDocumentFormatRegistry;
+import org.jodconverter.core.office.OfficeException;
+import org.jodconverter.core.office.OfficeManager;
+import org.jodconverter.local.LocalConverter;
+import org.jodconverter.local.office.ExternalOfficeManager;
 
 /**
  * OpenOfficePDF出力エクスポーター
@@ -129,13 +120,12 @@ public class OoPdfExporter extends ReportBookExporter {
 //        if ( book instanceof XSSFWorkbook) {
 //            throw new IllegalArgumentException( "XSSFFile not supported.");
 //        }
-
         if ( log.isInfoEnabled()) {
             log.info( "処理結果を" + getFilePath() + "に出力します");
         }
 
         if ( !controlOfficeManager) {
-            officeManager = new DefaultOfficeManagerBuilder().setPortNumber( port).build();
+            officeManager = ExternalOfficeManager.builder().portNumbers( port).build();
             try {
                 officeManager.start();
             } catch ( OfficeException e) {
@@ -146,13 +136,12 @@ public class OoPdfExporter extends ReportBookExporter {
         File tmpFile = null;
         try {
 
-            OfficeDocumentConverter converter = null;
-            if ( configuration.getOptionsProperties().isEmpty()) {
-                converter = new OfficeDocumentConverter( officeManager);
-            } else {
+            LocalConverter.Builder converterBuilder = LocalConverter.builder();
+            if ( !configuration.getOptionsProperties().isEmpty()) {
                 DocumentFormatRegistry registry = createDocumentFormatRegistry( configuration);
-                converter = new OfficeDocumentConverter( officeManager, registry);
+                converterBuilder.formatRegistry( registry);
             }
+            LocalConverter converter = converterBuilder.officeManager( officeManager).build();
 
             // 一時フォルダに吐き出し
             ExcelExporter excelExporter = new ExcelExporter();
@@ -163,7 +152,8 @@ public class OoPdfExporter extends ReportBookExporter {
 
             tmpFileName = excelExporter.getFilePath();
             tmpFile = new File( tmpFileName);
-            converter.convert( tmpFile, new File( getFilePath()));
+
+            converter.convert( tmpFile).to( new File( getFilePath())).execute();
 
         } catch ( Exception e) {
             throw new ExportException( e);
@@ -191,17 +181,19 @@ public class OoPdfExporter extends ReportBookExporter {
      */
     private DocumentFormatRegistry createDocumentFormatRegistry( ConvertConfiguration configuration) {
 
-        SimpleDocumentFormatRegistry registry = DefaultDocumentFormatRegistry.getInstance();
+        SimpleDocumentFormatRegistry registry = ( SimpleDocumentFormatRegistry) DefaultDocumentFormatRegistry.getInstance();
 
         if ( configuration == null || configuration.getOptionsProperties().isEmpty()) {
             return registry;
         }
 
-        DocumentFormat documentFormat = registry.getFormatByExtension( "pdf");
-        Map<String, Object> optionMap = new HashMap<String, Object>( documentFormat.getStoreProperties( DocumentFamily.SPREADSHEET));
+        DocumentFormat sourceFormat = registry.getFormatByExtension( "pdf");
+        DocumentFormat modifiedFormat = DocumentFormat.builder() //
+            .from( sourceFormat) //
+            .storeProperty( DocumentFamily.SPREADSHEET, "FilterData", configuration.getOptions()) //
+            .build();
 
-        optionMap.put( "FilterData", configuration.getOptions());
-        documentFormat.setStoreProperties( DocumentFamily.SPREADSHEET, optionMap);
+        registry.addFormat( modifiedFormat);
 
         return registry;
     }
